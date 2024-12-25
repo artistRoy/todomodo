@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom, #fce4ec, #f3e5f5);
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        #todo-container {
+            width: 90%;
+            max-width: 500px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        #input-box {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-top: 1px solid #ddd;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        #input-box:focus {
+            outline: none;
+        }
+
+        #todo-list {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .todo-item {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #fff;
+            transition: background-color 0.3s;
+            position: relative;
+        }
+
+        .todo-item.done {
+            text-decoration: line-through;
+            color: #aaa;
+        }
+
+        .todo-item:last-child {
+            border-bottom: none;
+        }
+
+        .todo-item.green {
+            background-color: #d0f8ce;
+        }
+
+        .todo-item.red {
+            background-color: #f8d7da;
+        }
+    </style>
+</head>
+<body>
+    <div id="todo-container">
+        <ul id="todo-list"></ul>
+        <input type="text" id="input-box" placeholder="Add a new task...">
+    </div>
+
+    <script>
+        // Selectors
+        const inputBox = document.getElementById("input-box");
+        const todoList = document.getElementById("todo-list");
+
+        // Load saved list from localStorage
+        function loadList() {
+            const savedList = localStorage.getItem("todoList");
+            if (savedList) {
+                todoList.innerHTML = savedList;
+                addEventListenersToItems();
+            }
+        }
+
+        // Save the current list to localStorage
+        function saveList() {
+            localStorage.setItem("todoList", todoList.innerHTML);
+        }
+
+        // Add event listeners to list items
+        function addEventListenersToItems() {
+            const items = document.querySelectorAll(".todo-item");
+            items.forEach((item) => {
+                item.addEventListener("mousedown", startDrag);
+                item.addEventListener("touchstart", startDrag);
+                item.addEventListener("mousemove", drag);
+                item.addEventListener("touchmove", drag);
+                item.addEventListener("mouseup", endDrag);
+                item.addEventListener("touchend", endDrag);
+            });
+        }
+
+        let dragStartX = 0;
+        let currentDraggedItem = null;
+
+        function startDrag(event) {
+            event.preventDefault();
+            dragStartX = event.type === "mousedown" ? event.clientX : event.touches[0].clientX;
+            currentDraggedItem = event.target;
+        }
+
+        function drag(event) {
+            if (!currentDraggedItem) return;
+            const currentX = event.type === "mousemove" ? event.clientX : event.touches[0].clientX;
+            const deltaX = currentX - dragStartX;
+            currentDraggedItem.style.transform = `translateX(${deltaX}px)`;
+        }
+
+        function endDrag(event) {
+            if (!currentDraggedItem) return;
+            const endX = event.type === "mouseup" ? event.clientX : event.changedTouches[0].clientX;
+            const deltaX = endX - dragStartX;
+
+            if (deltaX > 100) {
+                // Swipe right
+                markDone(currentDraggedItem);
+            } else if (deltaX < -100) {
+                // Swipe left
+                toggleColor(currentDraggedItem);
+            }
+
+            // Reset position
+            currentDraggedItem.style.transform = "translateX(0px)";
+            currentDraggedItem = null;
+        }
+
+        // Add a new task to the list
+        function addTask(task) {
+            const li = document.createElement("li");
+            li.className = "todo-item";
+            li.textContent = task;
+            todoList.appendChild(li);
+            saveList();
+            addEventListenersToItems();
+        }
+
+        // Mark task as done
+        function markDone(item) {
+            item.classList.toggle("done");
+            saveList();
+        }
+
+        // Toggle color between normal, green, and red
+        function toggleColor(item) {
+            if (item.classList.contains("green")) {
+                item.classList.remove("green");
+                item.classList.add("red");
+            } else if (item.classList.contains("red")) {
+                item.classList.remove("red");
+            } else {
+                item.classList.add("green");
+            }
+            saveList();
+        }
+
+        // Event listener for adding tasks
+        inputBox.addEventListener("keypress", (e) => {
+            if (e.key === "Enter" && inputBox.value.trim() !== "") {
+                addTask(inputBox.value.trim());
+                inputBox.value = "";
+            }
+        });
+
+        // Initialize the app
+        loadList();
+    </script>
+</body>
+</html>
